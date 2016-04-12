@@ -55,6 +55,7 @@ namespace RecipeBook
                 try
                 {
                     ReadRecipe();
+                    tabView.IsSelected = true;
                 }
                 catch (Exception ex)
                 {
@@ -169,6 +170,7 @@ namespace RecipeBook
                     try
                     {
                         CreateXMLDoc();
+                        MessageBox.Show("Resepti lisätty onnistuneesti");
                     }
                     catch (Exception ex)
                     {
@@ -176,7 +178,6 @@ namespace RecipeBook
                     }
                     finally
                     {
-                        MessageBox.Show("Resepti lisätty onnistuneesti");
                         RefreshComboBox();
                         ClearAddRecipe();
                         RefreshListBox();
@@ -189,6 +190,7 @@ namespace RecipeBook
                     try
                     {
                         AddXMLElements();
+                        MessageBox.Show("Resepti lisätty onnistuneesti");
                     }
                     catch (Exception ex)
                     {
@@ -196,7 +198,6 @@ namespace RecipeBook
                     }
                     finally
                     {
-                        MessageBox.Show("Resepti lisätty onnistuneesti");
                         RefreshComboBox();
                         ClearAddRecipe();
                         RefreshListBox();
@@ -210,10 +211,10 @@ namespace RecipeBook
                 try
                 {
                     UpdateRecipe();
+                    MessageBox.Show("Resepti päivitetty onnistuneesti");
                 }
                 catch (Exception ex)
                 {
-
                     MessageBox.Show(ex.Message);
                 }
                 finally
@@ -280,13 +281,13 @@ namespace RecipeBook
             btnAddIngredient.Content = "OK";
             btnAddRecipeText.Content = "OK";
             string id = lbRecipes.SelectedValue.ToString();
-            string search = "/CookBook/Recipe[@id='" + id + "']";
-            XmlNodeList list = doc.SelectNodes(search);
             tabAddRecipe.IsSelected = true;
             btnBackTo.Content = "Peruuta";
             tabAddRecipe.Header = "Muokkaa Reseptiä";
+            string search = "/CookBook/Recipe[@id='" + id + "']";
             string search2 = "/CookBook/Recipe[@id='" + id + "']/Ingredient/li";
             string search3 = "/CookBook/Recipe[@id='" + id + "']/RecipeText/li";
+            XmlNodeList list = doc.SelectNodes(search);
             XmlNodeList list2 = doc.SelectNodes(search2);
             XmlNodeList list3 = doc.SelectNodes(search3);
             foreach (XmlNode xn in list)
@@ -306,48 +307,51 @@ namespace RecipeBook
                 string listmember = xn.InnerText;
                 lvAddRecipeText.Items.Add(listmember);
             }
-
         }
 
         private void btnDeleteRecipe_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                string id = lbRecipes.SelectedValue.ToString();
-                string search = "/CookBook/Recipe[@id='" + id + "']";
-                XmlNode node = doc.SelectSingleNode(search);
-                if (node != null)
-                {
-                    var result = MessageBox.Show("Haluatko varmasti poistaa reseptin ?", "Poista resepti", MessageBoxButton.YesNo);
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        node.ParentNode.RemoveChild(node);
-                        doc.Save("recipeXML.xml");
-                    }
-                }
+                DeleteRecipe();
             }
             catch (Exception ex)
             {
-
-                throw ex;
+                MessageBox.Show(ex.Message);
             }
-            finally
-            {
-                tbHeading.Text = "";
-                tbAmount.Text = "";
-                tbDescription.Text = "";
-                icIngredient.Items.Clear();
-                icRecipeText.Items.Clear();
-                tabRecipe.IsSelected = true;
-                tabView.Visibility = Visibility.Hidden;
-                lbRecipes.SelectedIndex = -1;
-                RefreshComboBox();
-                RefreshListBox();
-            }
-
         }
 
         //METODIT
+        private void DeleteRecipe()
+        {
+            string id = lbRecipes.SelectedValue.ToString();
+            string search = "/CookBook/Recipe[@id='" + id + "']";
+            XmlNode node = doc.SelectSingleNode(search);
+            if (node != null)
+            {
+                var result = MessageBox.Show("Haluatko varmasti poistaa reseptin ?", "Poista resepti", MessageBoxButton.YesNo);
+                if (result == MessageBoxResult.Yes)
+                {
+                    node.ParentNode.RemoveChild(node);
+                    doc.Save("recipeXML.xml");
+                    tbHeading.Text = "";
+                    tbAmount.Text = "";
+                    tbDescription.Text = "";
+                    icIngredient.Items.Clear();
+                    icRecipeText.Items.Clear();
+                    tabRecipe.IsSelected = true;
+                    tabView.Visibility = Visibility.Hidden;
+                    lbRecipes.SelectedIndex = -1;
+                    RefreshComboBox();
+                    RefreshListBox();
+                }
+                else
+                {
+                    tabView.IsSelected = true;
+                }
+            }
+        }
+
         private void ReadRecipe()
         {
             tabView.Visibility = Visibility.Visible;
@@ -367,13 +371,11 @@ namespace RecipeBook
                 tbAmount.Text = xn["Amount"].InnerText;
                 tbDescription.Text = xn["Description"].InnerText;
             }
-
             foreach (XmlNode node in list2)
             {
                 string listmember = node.InnerText;
                 icIngredient.Items.Add(listmember);
             }
-
             foreach (XmlNode node in list3)
             {
                 string listmember = node.InnerText;
@@ -398,19 +400,15 @@ namespace RecipeBook
                 node["Amount"].InnerText = txtAmount.Text;
                 node["Description"].InnerText = txtDescription.Text;
             }
-
             for (int i = 0; i < ingredients.Count; i++)
             {
                 list2[i].InnerText = ingredients[i].ToString();
             }
-
             for (int i = 0; i < recipeText.Count; i++)
             {
                 list3[i].InnerText = recipeText[i].ToString();
             }
-
             doc.Save("recipeXML.xml");
-
         }
 
         private void CreateXMLDoc()
@@ -430,26 +428,43 @@ namespace RecipeBook
 
         private void AddXMLElements()
         {
-            previousIndex = lbRecipes.SelectedIndex;
-            int lastItemIndex = lbRecipes.Items.Count - 1;
-            lbRecipes.SelectedIndex = lastItemIndex;
-            string currentId = lbRecipes.SelectedValue.ToString();
-            int id = Int32.Parse(currentId) + 1;
-            string selectedCategory = cbAddCategory.Text;
-            var xdoc = XDocument.Load("recipeXML.xml");
-            var newElement = new XElement("Recipe", new XAttribute("id", id.ToString()),
-                new XElement("Title", txtTitle.Text),
-                new XElement("Category", selectedCategory.ToString()),
-                new XElement("Description", txtDescription.Text),
-                new XElement("Amount", txtAmount.Text),
-                new XElement("Ingredient", ingredients.Select(text => new XElement("li", text))),
-                new XElement("RecipeText", recipeText.Select(text => new XElement("li", text))));
-            xdoc.Element("CookBook").Add(newElement);
-            xdoc.Save("recipeXML.xml");
-            lbRecipes.SelectedIndex = previousIndex;
-            if (previousIndex == -1)
+            if (lbRecipes.Items.Count > 0)
             {
-                tabView.Visibility = Visibility.Hidden;
+                previousIndex = lbRecipes.SelectedIndex;
+                int lastItemIndex = lbRecipes.Items.Count - 1;
+                lbRecipes.SelectedIndex = lastItemIndex;
+                string currentId = lbRecipes.SelectedValue.ToString();
+                int id = Int32.Parse(currentId) + 1;
+                string selectedCategory = cbAddCategory.Text;
+                var xdoc = XDocument.Load("recipeXML.xml");
+                var newElement = new XElement("Recipe", new XAttribute("id", id.ToString()),
+                    new XElement("Title", txtTitle.Text),
+                    new XElement("Category", selectedCategory.ToString()),
+                    new XElement("Description", txtDescription.Text),
+                    new XElement("Amount", txtAmount.Text),
+                    new XElement("Ingredient", ingredients.Select(text => new XElement("li", text))),
+                    new XElement("RecipeText", recipeText.Select(text => new XElement("li", text))));
+                xdoc.Element("CookBook").Add(newElement);
+                xdoc.Save("recipeXML.xml");
+                lbRecipes.SelectedIndex = previousIndex;
+                if (previousIndex == -1)
+                {
+                    tabView.Visibility = Visibility.Hidden;
+                }
+            }
+            else
+            {
+                string selectedCategory = cbAddCategory.Text;
+                var xdoc = XDocument.Load("recipeXML.xml");
+                var newElement = new XElement("Recipe", new XAttribute("id","1"),
+                    new XElement("Title", txtTitle.Text),
+                    new XElement("Category", selectedCategory.ToString()),
+                    new XElement("Description", txtDescription.Text),
+                    new XElement("Amount", txtAmount.Text),
+                    new XElement("Ingredient", ingredients.Select(text => new XElement("li", text))),
+                    new XElement("RecipeText", recipeText.Select(text => new XElement("li", text))));
+                xdoc.Element("CookBook").Add(newElement);
+                xdoc.Save("recipeXML.xml");
             }
         }
 
@@ -470,30 +485,36 @@ namespace RecipeBook
         private void RefreshListBox()
         {
             /*(FindResource("RecipeData") as XmlDataProvider).Refresh();*/
-            doc.Load("recipeXML.xml");
-            var xdoc = XDocument.Load("recipeXML.xml");
-            var recipes = from cookbook in xdoc.Descendants("Recipe")
-                          select new
-                          {
-                              Title = cookbook.Element("Title").Value,
-                              id = cookbook.Attribute("id").Value
-                          };
-            lbRecipes.ItemsSource = recipes;
-            lbRecipes.SelectedValuePath = "id";
+            if (File.Exists("recipeXML.xml"))
+            {
+                doc.Load("recipeXML.xml");
+                var xdoc = XDocument.Load("recipeXML.xml");
+                var recipes = from cookbook in xdoc.Descendants("Recipe")
+                              select new
+                              {
+                                  Title = cookbook.Element("Title").Value,
+                                  id = cookbook.Attribute("id").Value
+                              };
+                lbRecipes.ItemsSource = recipes;
+                lbRecipes.SelectedValuePath = "id";
+            }
         }
 
         private void RefreshComboBox()
         {
-            doc.Load("recipeXML.xml");
-            XmlNodeList categoryXML = doc.SelectNodes("/CookBook/Recipe/Category");
-            List<string> categoryList = new List<string>();
-            for (int i = 0; i < categoryXML.Count; i++)
+            if (File.Exists("recipeXML.xml"))
             {
-                categoryList.Add(categoryXML[i].InnerText);
+                doc.Load("recipeXML.xml");
+                XmlNodeList categoryXML = doc.SelectNodes("/CookBook/Recipe/Category");
+                List<string> categoryList = new List<string>();
+                for (int i = 0; i < categoryXML.Count; i++)
+                {
+                    categoryList.Add(categoryXML[i].InnerText);
+                }
+                categoryList = categoryList.Distinct().ToList();
+                cbGategory.ItemsSource = categoryList;
+                cbGategory.SelectedIndex = -1;
             }
-            categoryList = categoryList.Distinct().ToList();
-            cbGategory.ItemsSource = categoryList;
-            cbGategory.SelectedIndex = -1;
         }
     }
 }
