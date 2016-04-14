@@ -1,4 +1,4 @@
-# RecipeBook2
+# RecipeBook
 
 Windows-ohjelmointi harkkatyö
 
